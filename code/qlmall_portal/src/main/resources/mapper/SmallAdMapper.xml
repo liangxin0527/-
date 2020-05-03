@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.liangxin.qlmall_portal.mapper.SmallAdMapper">
+
+    <select id="selectAll" resultType="com.liangxin.qlmall_portal.bean.SmallAd">
+    select  * from smallad
+</select>
+    <insert id="insertInto" parameterType="com.liangxin.qlmall_portal.bean.SmallAd">
+
+ insert  into smallad values(default ,#{path},#{status})
+ </insert>
+    <update id="updateStatsAll">
+        update smallad
+        set
+        <if test="param2 ==true">
+            status = 1
+        </if>
+        <if test="param2 ==false">
+            status = 0
+        </if>
+        where
+        <foreach collection="param1" item="ids" open="id in( " close=")" separator=",">
+            #{ids}
+        </foreach>
+    </update>
+    <select id="findADByStatus" resultType="com.liangxin.qlmall_portal.bean.SmallAd">
+        select  * from smallad where status=1
+    </select>
+</mapper>

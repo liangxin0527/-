@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>首页大广告位</title>
+    <link rel="stylesheet" href="/assets/libs/layui/css/layui.css"/>
+    <link rel="stylesheet" href="/assets/module/admin.css?v=315"/>
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <style>
+        #tableTbImg + .layui-table-view .layui-table-body tbody > tr > td {
+            padding: 0;
+        }
+
+        #tableTbImg + .layui-table-view .layui-table-body tbody > tr > td > .layui-table-cell {
+            height: 60px;
+            line-height: 60px;
+        }
+
+        .tdImg {
+            width: 50px;
+            height: 50px;
+            max-width: none;
+            cursor: zoom-in;
+        }
+
+    </style>
+</head>
+<body>
+
+<!-- 页面加载loading -->
+<div class="page-loading">
+    <div class="ball-loader">
+        <span></span><span></span><span></span><span></span>
+    </div>
+</div>
+
+<!-- 表格内容 -->
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-body">
+            <!--            // 数据表格-->
+            <table class="layui-table" id="bigadtables" lay-filter="tableTbBas"></table>
+        </div>
+    </div>
+
+</div>
+
+<!--数据表格中工具栏-->
+<script type="text/html" id="bigadbar">
+    <div class="layui-btn-container">
+        <shiro:hasPermission name="item:delete">
+            <button class="layui-btn layui-btn-sm" lay-event="fzall">封禁选中</button>
+            <button class="layui-btn layui-btn-sm" lay-event="startall">开启选中</button>
+        </shiro:hasPermission>
+        <shiro:lacksPermission name="item:delete">
+            <button class="layui-btn layui-btn-danger" disabled>无权限</button>
+        </shiro:lacksPermission>
+    </div>
+</script>
+
+<fieldset class="layui-elem-field layui-field-title" style="margin-top: 30px;">
+    <legend>上传多张图片</legend>
+</fieldset>
+<script type="text/html" id="ad2-status">
+    <input type="checkbox" value="{{d.id}}" lay-skin="switch" lay-text="开启|禁用" lay-filter="itemIs" {{d.status==1 ? 'checked':''}}>
+</script>
+
+<div class="layui-upload">
+    <button type="button" class="layui-btn" id="test2">多图片上传</button>
+    <blockquote class="layui-elem-quote layui-quote-nm" style="margin-top: 10px;">
+        预览图：
+        <div class="layui-upload-list" id="demo2"></div>
+    </blockquote>
+</div>
+<script type="text/javascript" src="/assets/libs/layui/layui.js"></script>
+<script type="text/javascript" src="/assets/js/common.js?v=315"></script>
+<script>
+    layui.use(['table','notice','admin','util','upload'],function() {
+        var table = layui.table;
+        var admin = layui.admin;
+        var notice = layui.notice;
+        var util = layui.util;
+        var upload=layui.upload;
+
+        //多图片上传
+        upload.render({
+            elem: '#test2'
+            ,url: '/item/uploadadsmall' //改成您自己的上传接口
+            ,multiple: true
+            ,before: function(obj){
+                //预读本地文件示例，不支持ie8
+                obj.preview(function(index, file, result){
+                    $('#demo2').append('<img src="'+ result +'" alt="'+ file.name +'" class="layui-upload-img">')
+                });
+            }
+            ,done: function(res){
+                if (res.code === 200) {
+                    layui.form.render();
+                    notice.msg("添加成功", {icon: 1, timeout: 2000, animateInside: true, audio: '1'});
+                    window.location.href="smallad"
+                } else {
+                    notice.msg(res.message, {icon: 2, timeout: 2000, animateInside: true, audio: '1'});
+                }
+
+                var $ = layui.$, active = {
+                    reload: function(){
+                        //执行重载
+                        table.reload('tableTbBas', {
+                            page: {
+                                curr: 1 //重新从第 1 页开始
+                            }
+                        }, 'data');
+                    }
+                };
+                //上传完毕
+            }
+        });
+
+        var talbeIns=table.render({
+            elem: '#bigadtables'
+            ,url:'/item/smallad'
+            ,cellMinWidth: 100
+            ,skin:"layui-layer-admin"
+            ,toolbar: '#bigadbar' //开启头部工具栏，并为其绑定左侧模板
+            ,defaultToolbar: ['print', 'exports', { //自定义头部工具栏右侧图标。如无需自定义，去除该参数即可
+                title: '刷新'
+                ,layEvent: 'reset'
+                ,icon: 'layui-icon-refresh'
+            }]
+            ,cols: [
+                [
+                    {type: 'checkbox'}
+                    ,{field:'id',align: 'center', title: 'ID',sort:true}
+                    ,{
+                    align: 'center', templet: function (d) {
+                        var url = d.path;
+                        return '<img src="' + url + '" class="tdImg" tb-img/>';
+                    }, title: '商品图片',unresize: true
+                }
+                    ,{field: 'status', align: 'center', title: '状态',templet: '#ad2-status'}
+                ]
+            ]
+            ,page: true
+            ,limit:10
+            , limits: [ 5, 10, 15, 20,25]
+            , loading: true
+        });
+        //表单刷新
+        var $ = layui.$, active = {
+            reload: function(){
+                //执行重载
+                table.reload('tableTbBas', {
+                    page: {
+                        curr: 1 //重新从第 1 页开始
+                    }
+                }, 'data');
+            }
+        };
+        //头工具栏事件
+        table.on('toolbar(tableTbBas)', function(obj){
+            if (obj.event==='reset'){
+                talbeIns.reload();
+            }
+            if (obj.event==='fzall'){//封禁
+                var checkStatus = table.checkStatus(obj.config.id);
+                if (!checkStatus.data.length) {
+                    notice.msg("请选择要封禁的商品！！", {icon: 5, timeout: 2000, animateInside: true, audio: '1'});
+                }else{
+                    var logIds = [];
+                    layui.each(checkStatus.data, function (key, item) {
+                        logIds.push(item.id);
+                    });
+                    $.ajax({
+                        url:"/item/updateSmallADStatsAll/"+logIds+"/false",
+                        type:"post",
+                        async:false,
+                        dataType:"json",/**这个类型很重要 */
+                        cache:false,
+                        success:function (data) {
+                            if (data.code===200){
+                                talbeIns.reload();
+                                notice.msg("封禁成功",{icon:1,timeout:2000,animateInside:true,audio:'1'});
+                            } else{
+                                notice.msg(data.message,{icon:2,timeout:2000,animateInside:true,audio:'1'});
+                            }
+                        }
+                    });
+                }
+            }
+            if (obj.event==="startall"){//开启
+                var checkStatus=table.checkStatus(obj.config.id);
+                if (!checkStatus.data.length) {
+                    notice.msg("请选择要开启的商品！！", {icon: 5, timeout: 2000, animateInside: true, audio: '1'});
+                }else{
+                    var logIds = [];
+                    layui.each(checkStatus.data, function (key, item) {
+                        logIds.push(item.id);
+                    });
+                    $.ajax({
+                        url:"/item/updateSmallADStatsAll/"+logIds+"/true",
+                        type:"post",
+                        async:false,
+                        dataType:"json",
+                        cache:false,
+                        success:function (data) {
+                            if (data.code===200){
+                                talbeIns.reload();
+                                notice.msg("开启成功",{icon:1,timeout:2000,animateInside:true,audio:'1'});
+                            } else{
+                                notice.msg(data.message,{icon:2,timeout:2000,animateInside:true,audio:'1'});
+                            }
+                        }
+                    });
+                }
+            }
+        });
+
+
+        // 点击图片放大
+        $(document).off('click.tbImg').on('click.tbImg', '[tb-img]', function () {
+            layer.photos(
+                {
+                    photos: {
+                        data: [{src: $(this).attr('src')}]
+                    },
+                    shade: .1,
+                    closeBtn: true,
+                }
+            );
+        });
+
+        //监听开启和禁用操作
+        form.on('switch(itemIs)', function(obj){
+            var flag=obj.elem.checked;
+            $.post("/item/updateStatus",{"itemId":this.value,"flag":flag},function (data) {
+                if (data.code==200&&flag==true){
+                    notice.msg("开启成功",{icon:1,timeout:2000,animateInside:true,audio:'1'});
+                }else if(data.code==200&&flag==false){
+                    notice.msg("禁用成功",{icon:1,timeout:2000,animateInside:true,audio:'1'});
+                }else{
+                    notice.msg(data.message,{icon:2,timeout:2000,animateInside:true,audio:'1'});
+                }
+            });
+        });
+
+
+    });
+
+</script>
+</body>
+</html>
